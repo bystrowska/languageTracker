@@ -1,6 +1,6 @@
 from enum import Enum
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
 class ModelName(str, Enum):
@@ -69,8 +69,25 @@ async def read_file(file_path: str):
     return {"file_path": file_path}
 
 @app.get("/items/")
-async def read_item(skip: int = 0, limit: int = 10):
-    return items_db[skip: skip + limit]
+async def read_items(
+    i: list[int] = Query(default=[]), # this is query arg, but since it's a list it has to be declared explicitly with Query bc otherwise it would be treated as request body arg
+    q: str | None = Query(
+        default=None,
+        alias="item-query",
+        title="Query string",
+        description="Query string that can only be 'fixedquery'",
+        min_length=3,
+        max_length=50,
+        regex="^fixedquery$", # ^ -> starts with $ -> ends after
+        deprecated=True
+
+    )
+):
+    results = [items_db[x] for x in i]
+    if q:
+        for result in results:
+            result.update({"q": q})
+    return results
 
 # request with body
 @app.post("/items/")
