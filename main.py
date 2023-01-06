@@ -1,6 +1,6 @@
 from enum import Enum
 
-from fastapi import FastAPI, Path, Query
+from fastapi import Body, FastAPI, Path, Query
 from pydantic import BaseModel
 
 class ModelName(str, Enum):
@@ -17,6 +17,10 @@ class Item(BaseModel):
     description: str | None = None
     price: float
     tax: float | None = None
+
+class User(BaseModel):
+    username: str
+    full_name: str | None = None
 
 app = FastAPI()
 
@@ -108,9 +112,37 @@ async def create_item(item: Item):
 # if in path detected as path arg
 # if not in path and singular type (int, float...) -> query arg
 # if there's a model for that type -> request body
+'''
 @app.put("/items/{item_id}")
 async def create_item(item_id: int, item: Item, q: str | None = None):
     result =  {"item_id": item_id, **item.dict()}
     if q:
         result.update({"q": q})
     return result
+'''
+
+@app.put("/items/{item_id}")
+async def update_item(
+    *,
+    item_id: int = Path(title="The ID of the item to get", ge=0, le=1000),
+    q: str | None = None, # query param is the default for singular types
+    item: Item | None = None,
+    user: User | None = None,
+    importance: int = Body(),
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    if item:
+        results.update({"item": item})
+    if user:
+        results.update({"user": user})
+    return results
+
+@app.put("/item")
+async def put_item(
+    *,
+    item: Item = Body(embed=True), # request will have key "key": val instead of just val
+):
+    results = {"item": item}
+    return results
