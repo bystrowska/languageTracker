@@ -1,6 +1,6 @@
 from enum import Enum
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Path, Query
 from pydantic import BaseModel
 
 class ModelName(str, Enum):
@@ -51,9 +51,15 @@ async def read_user_item(
     return item
 
 @app.get("/items/{item_id}")
-async def read_item(item_id: str, needy: str):
-    item = {"item_id": item_id, "needy": needy}
-    return item
+async def read_items(
+    *, # now all others args have to be called as keyword args
+    item_id: int = Path(title="The ID of the item to get", ge=1, lt=100),
+    q: str | None = Query(default=None)
+    ):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
 
 @app.get("/models/{model_name}")
 async def get_model(model_name: ModelName):
