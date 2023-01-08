@@ -26,9 +26,26 @@ class Item(BaseModel):
     tags: set[str] = set()
     images: list[Image] | None = None
 
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "Foo",
+                "description": "A very nice Item",
+                "price": 35.3,
+                "tax": 3.2,
+                "tags": ["one", "two"],
+                "images": [
+                    {
+                        "url": "url",
+                        "name": "pretty image",
+                    }
+                ],
+            }
+        }
+
 class User(BaseModel):
-    username: str
-    full_name: str | None = None
+    username: str = Field(example="thebestuser")
+    full_name: str | None = Field(default=None, example="Best User")
 
 app = FastAPI()
 
@@ -159,6 +176,24 @@ async def put_item(
 # (json only supports str as keys but pydantic does the conversion)
 @app.post("/index-weights/")
 async def create_index_weights(
-    weights: dict[int, float] = Body(description="int: float")
+    weights: dict[int, float] = Body(
+        description="int: float",
+        examples={
+            "good example": {
+                "summary": "working example",
+                "description": "it will work if you use it!",
+                "value": {
+                    4: 4.5,
+                },
+            },
+            "bad example": {
+                "summary": "invalid example",
+                "description": "it won't work if you use it :(",
+                "value": {
+                    "not an int": 4,
+                },
+            },
+        },
+    )
 ):
     return weights
