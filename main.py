@@ -1,7 +1,7 @@
 from enum import Enum
 
 from fastapi import Body, FastAPI, Path, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 class ModelName(str, Enum):
     alexnet = "alexnet"
@@ -12,6 +12,10 @@ class ModelName(str, Enum):
 data model from Pydantic gives code completion and other stuff
 other than that basically a dict (?)
 '''
+class Image(BaseModel):
+    url: HttpUrl
+    name: str
+
 class Item(BaseModel):
     name: str
     description: str | None = Field(
@@ -19,6 +23,8 @@ class Item(BaseModel):
     ) # field works the same as Path / Query and has all the same params
     price: float = Field(gt=0, description="The price must be greater than zero")
     tax: float | None = None
+    tags: set[str] = set()
+    images: list[Image] | None = None
 
 class User(BaseModel):
     username: str
@@ -148,3 +154,11 @@ async def put_item(
 ):
     results = {"item": item}
     return results
+
+# dict with unknown keys / keys of specific type
+# (json only supports str as keys but pydantic does the conversion)
+@app.post("/index-weights/")
+async def create_index_weights(
+    weights: dict[int, float] = Body(description="int: float")
+):
+    return weights
