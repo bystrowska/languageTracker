@@ -1,7 +1,7 @@
 from enum import Enum
 
 from fastapi import Body, FastAPI, Path, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class ModelName(str, Enum):
     alexnet = "alexnet"
@@ -14,8 +14,10 @@ other than that basically a dict (?)
 '''
 class Item(BaseModel):
     name: str
-    description: str | None = None
-    price: float
+    description: str | None = Field(
+        default=None, title="The description of the item", max_length=300
+    ) # field works the same as Path / Query and has all the same params
+    price: float = Field(gt=0, description="The price must be greater than zero")
     tax: float | None = None
 
 class User(BaseModel):
