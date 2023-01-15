@@ -79,16 +79,18 @@ async def read_user_item(
         )
     return item
 
-@app.get("/items/{item_id}")
+@app.get("/item/{item_id}")
 async def read_items(
     *, # now all others args have to be called as keyword args
     item_id: int = Path(title="The ID of the item to get", ge=1, lt=100),
     q: str | None = Query(default=None),
     ads_id: str | None = Cookie(default=None), # needs to be explicitly declared as cookie, otherwise defaults to path param
     ):
-    results = {"ads_id": ads_id}
+    results = {"item_id": item_id}
     if q:
         results.update({"q": q})
+    if ads_id:
+        results.update({"ads_id": ads_id})
     return results
 
 @app.get("/models/{model_name}")
