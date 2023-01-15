@@ -1,6 +1,6 @@
 from enum import Enum
 
-from fastapi import Body, Cookie, FastAPI, Path, Query
+from fastapi import Body, Cookie, FastAPI, Header, Path, Query
 from pydantic import BaseModel, Field, HttpUrl
 
 class ModelName(str, Enum):
@@ -52,8 +52,15 @@ app = FastAPI()
 items_db = [{"item_name": "Foo"}, {"item_name": "Bar"}, {"item_name": "Baz"}]
 
 @app.get("/")
-async def root():
-    return {"message": "Hello World"}
+async def root(
+    user_agent: str | None = Header(default=None), # this is the user-agent thing that the browser sets
+    # user_agent gets auto converted to user-agent but can disable by setting convert_underscores=False
+    x_token: list[str] | None = Header(default=None),
+):
+    msg = {"message": "Hello " + (user_agent if user_agent else "world")}
+    if x_token:
+        msg.update({"x_token": x_token})
+    return msg
 
 @app.get("/projects/{project_id}")
 async def get_project(project_id: int, q: str | None = None, short: bool = False):
