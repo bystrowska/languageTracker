@@ -1,6 +1,6 @@
 from enum import Enum
 
-from fastapi import Body, FastAPI, Path, Query
+from fastapi import Body, Cookie, FastAPI, Path, Query
 from pydantic import BaseModel, Field, HttpUrl
 
 class ModelName(str, Enum):
@@ -83,9 +83,10 @@ async def read_user_item(
 async def read_items(
     *, # now all others args have to be called as keyword args
     item_id: int = Path(title="The ID of the item to get", ge=1, lt=100),
-    q: str | None = Query(default=None)
+    q: str | None = Query(default=None),
+    ads_id: str | None = Cookie(default=None), # needs to be explicitly declared as cookie, otherwise defaults to path param
     ):
-    results = {"item_id": item_id}
+    results = {"ads_id": ads_id}
     if q:
         results.update({"q": q})
     return results
