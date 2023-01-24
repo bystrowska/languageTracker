@@ -1,7 +1,8 @@
 from enum import Enum
+from typing import Any
 
 from fastapi import Body, Cookie, FastAPI, Header, Path, Query
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, EmailStr
 
 class ModelName(str, Enum):
     alexnet = "alexnet"
@@ -43,13 +44,37 @@ class Item(BaseModel):
             }
         }
 
-class User(BaseModel):
+class BaseUser(BaseModel):
     username: str = Field(example="thebestuser")
+    email: EmailStr
     full_name: str | None = Field(default=None, example="Best User")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "username": "koki",
+                "email": "koki@koki.koki",
+                "full_name": "Eda-Weda TysTys"
+            }
+        }
+
+class UserIn(BaseUser):
+    password: str
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "username": "koki",
+                "password": "Tyskasmierdzi",
+                "email": "koki@koki.koki",
+                "full_name": "Eda-Weda TysTys"
+            }
+        }
 
 app = FastAPI()
 
-items_db = [{"item_name": "Foo"}, {"item_name": "Bar"}, {"item_name": "Baz"}]
+# items_db = [{"item_name": "Foo"}, {"item_name": "Bar"}, {"item_name": "Baz"}]
+items_db = [Item(name="Foo", price=12.99), Item(name="Bar", price=3.49), Item(name="Baz", price=3.33)]
 
 @app.get("/")
 async def root(
@@ -127,7 +152,7 @@ async def read_items(
         deprecated=True
 
     )
-):
+) -> list[Item]:
     results = [items_db[x] for x in i]
     if q:
         for result in results:
@@ -135,13 +160,13 @@ async def read_items(
     return results
 
 # request with body
-@app.post("/items/")
-async def create_item(item: Item):
+@app.post("/items/", response_model_exclude_unset=True)
+async def create_item(item: Item) -> Item:
     item_dict = item.dict()
     if item.tax:
         price_with_tax = item.price + item.tax
         item_dict.update({"price_with_tax": price_with_tax})
-    return item_dict
+    return item
 
 # request with body and path and query parameters
 # if in path detected as path arg
@@ -162,7 +187,7 @@ async def update_item(
     item_id: int = Path(title="The ID of the item to get", ge=0, le=1000),
     q: str | None = None, # query param is the default for singular types
     item: Item | None = None,
-    user: User | None = None,
+    user: BaseUser | None = None,
     importance: int = Body(),
 ):
     results = {"item_id": item_id}
@@ -207,3 +232,7 @@ async def create_index_weights(
     )
 ):
     return weights
+
+@app.post("/user/")
+async def create_user(user: UserIn) -> BaseUser: # this works bc UserIn is a subclass of BaseUser
+    return user
