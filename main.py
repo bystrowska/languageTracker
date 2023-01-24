@@ -36,7 +36,7 @@ class Item(BaseModel):
                 "tags": ["one", "two"],
                 "images": [
                     {
-                        "url": "url",
+                        "url": "https://url.com", # url needs protocol
                         "name": "pretty image",
                     }
                 ],
