@@ -18,7 +18,7 @@ class Image(BaseModel):
     name: str
 
 class Item(BaseModel):
-    name: str
+    name: str = Field(default="Item")
     description: str | None = Field(
         default=None, title="The description of the item", max_length=300
     ) # field works the same as Path / Query and has all the same params
@@ -44,19 +44,18 @@ class Item(BaseModel):
             }
         }
 
+class CarItem(Item):
+    name = "Car"
+    price: float = 9.99 # idk why but you need type annotation for it to work
+
+class PlaneItem(Item):
+    name = "Plane"
+    price: float = 10_000_000
+
 class BaseUser(BaseModel):
     username: str = Field(example="thebestuser")
     email: EmailStr
     full_name: str | None = Field(default=None, example="Best User")
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "username": "koki",
-                "email": "koki@koki.koki",
-                "full_name": "Eda-Weda TysTys"
-            }
-        }
 
 class UserIn(BaseUser):
     password: str
@@ -70,6 +69,20 @@ class UserIn(BaseUser):
                 "full_name": "Eda-Weda TysTys"
             }
         }
+
+class UserOut(BaseUser):
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "username": "koki",
+                "email": "koki@koki.koki",
+                "full_name": "Eda-Weda TysTys"
+            }
+        }
+
+class UserDB(BaseUser):
+    hashed_password: str
 
 app = FastAPI()
 
@@ -111,19 +124,20 @@ async def read_user_item(
         )
     return item
 
-@app.get("/item/{item_id}")
-async def read_items(
+@app.get("/item/{item_id}", response_model_exclude_none=True)
+async def read_item(
     *, # now all others args have to be called as keyword args
     item_id: int = Path(title="The ID of the item to get", ge=1, lt=100),
     q: str | None = Query(default=None),
     ads_id: str | None = Cookie(default=None), # needs to be explicitly declared as cookie, otherwise defaults to path param
-    ):
-    results = {"item_id": item_id}
-    if q:
-        results.update({"q": q})
+    ) -> CarItem | PlaneItem:
+    if item_id%2:
+        item = CarItem(description=q)
+    else:
+        item = PlaneItem(description=q)
     if ads_id:
-        results.update({"ads_id": ads_id})
-    return results
+        print("ads_id: " + ads_id)
+    return item
 
 @app.get("/models/{model_name}")
 async def get_model(model_name: ModelName):
@@ -187,7 +201,7 @@ async def update_item(
     item_id: int = Path(title="The ID of the item to get", ge=0, le=1000),
     q: str | None = None, # query param is the default for singular types
     item: Item | None = None,
-    user: BaseUser | None = None,
+    user: UserOut | None = None,
     importance: int = Body(),
 ):
     results = {"item_id": item_id}
@@ -233,6 +247,21 @@ async def create_index_weights(
 ):
     return weights
 
+def fake_password_hasher(raw_password: str) -> str:
+    return "hashhhh" + raw_password
+
+def fake_save_user(user_in: UserIn) -> UserDB:
+    hashed_password = fake_password_hasher(user_in.password)
+    '''
+     we unwrap a dict from user_in to be able to pass it as pairs of keys and values to the function
+     so the below is eq to:
+     UserDB(username=user_in_dict["username"], ...)
+    '''
+    user_db = UserDB(**user_in.dict(), hashed_password=hashed_password)
+    print("User (fake) saved!")
+    return user_db
+
 @app.post("/user/")
-async def create_user(user: UserIn) -> BaseUser: # this works bc UserIn is a subclass of BaseUser
-    return user
+async def create_user(user: UserIn) -> UserOut:
+    user_saved = fake_save_user(user)
+    return UserOut(**user_saved.dict())
