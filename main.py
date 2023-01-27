@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import Any
 
-from fastapi import Body, Cookie, FastAPI, Form, Header, Path, Query, status
+from fastapi import Body, Cookie, FastAPI, File, Form, Header, Path, Query, status, UploadFile
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 
 class ModelName(str, Enum):
@@ -269,3 +270,28 @@ async def create_user(user: UserIn) -> UserOut:
 @app.post("/login/")
 async def login(username: str = Form(), password: str = Form()): # can't have both body and form because encoding (idk why exactly but different encoding is used for forms)
     return {"username": username}
+
+@app.post("/files/", status_code=status.HTTP_201_CREATED)
+async def create_file(file: bytes | None = File(default = None)): # the file gets stored in mem
+    return {"file_size": len(file)} if file else {"message": "No file sent"}
+
+@app.post("/uploadfile/", status_code=status.HTTP_201_CREATED)
+async def create_upload_file(file: UploadFile = File(description="You need to use File() if you want to add desc, but the type can still be UploadFile so you get all the benefits")): # stored in mem only up to max size, rest on disc and you can get metadata from it
+    contents = await file.read()
+    return {"filename": file.filename, "contents": contents}
+
+@app.post("/uploadfiles/")
+async def create_upload_files(files: list[UploadFile]):
+    return {"filenames": [file.filename for file in files]}
+
+@app.get("/uploadfiles/form/")
+async def upload_files_form():
+    content = """
+<body>
+<form action="/uploadfiles/" enctype="multipart/form-data" method="post">
+<input name="files" type="file" multiple>
+<input type="submit">
+</form>
+</body>
+    """
+    return HTMLResponse(content=content)
