@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any
 
-from fastapi import Body, Cookie, FastAPI, Header, Path, Query, status
+from fastapi import Body, Cookie, FastAPI, Form, Header, Path, Query, status
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 
 class ModelName(str, Enum):
@@ -265,3 +265,7 @@ def fake_save_user(user_in: UserIn) -> UserDB:
 async def create_user(user: UserIn) -> UserOut:
     user_saved = fake_save_user(user)
     return UserOut(**user_saved.dict())
+
+@app.post("/login/")
+async def login(username: str = Form(), password: str = Form()): # can't have both body and form because encoding (idk why exactly but different encoding is used for forms)
+    return {"username": username}
