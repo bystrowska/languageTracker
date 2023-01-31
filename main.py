@@ -272,8 +272,16 @@ async def login(username: str = Form(), password: str = Form()): # can't have bo
     return {"username": username}
 
 @app.post("/files/", status_code=status.HTTP_201_CREATED)
-async def create_file(file: bytes | None = File(default = None)): # the file gets stored in mem
-    return {"file_size": len(file)} if file else {"message": "No file sent"}
+async def create_file(
+    file: bytes = File(), # the file gets stored in mem
+    fileb: UploadFile = File(),
+    token: str = Form(),
+):
+    return {
+        "file_size": len(file),
+        "token": token,
+        "fileb_content_type": fileb.content_type,
+    }
 
 @app.post("/uploadfile/", status_code=status.HTTP_201_CREATED)
 async def create_upload_file(file: UploadFile = File(description="You need to use File() if you want to add desc, but the type can still be UploadFile so you get all the benefits")): # stored in mem only up to max size, rest on disc and you can get metadata from it
