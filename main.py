@@ -151,6 +151,8 @@ async def get_model(model_name: ModelName):
 
 @app.get("/files/{file_path:path}", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def read_file(file_path: str):
+    if file_path is "":
+        return {"message": "empty file path"}
     return {"file_path": file_path}
 
 @app.get("/items/", status_code=status.HTTP_418_IM_A_TEAPOT)
