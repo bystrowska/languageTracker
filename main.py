@@ -101,7 +101,7 @@ async def root(
         msg.update({"x_token": x_token})
     return msg
 
-@app.get("/projects/{project_id}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get("/tutorial/projects/{project_id}", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def get_project(project_id: int, q: str | None = None, short: bool = False):
     project = {"item_id": project_id}
     if q:
@@ -112,7 +112,7 @@ async def get_project(project_id: int, q: str | None = None, short: bool = False
         )
     return project
 
-@app.get("/users/{user_id}/items/{item_id}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get("/tutorial/users/{user_id}/items/{item_id}", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def read_user_item(
     user_id: int, item_id: str, q: str | None = None, short: bool = False
 ):
@@ -125,7 +125,7 @@ async def read_user_item(
         )
     return item
 
-@app.get("/item/{item_id}", response_model_exclude_none=True, status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get("/tutorial/item/{item_id}", response_model_exclude_none=True, status_code=status.HTTP_418_IM_A_TEAPOT)
 async def read_item(
     *, # now all others args have to be called as keyword args
     item_id: int = Path(title="The ID of the item to get", ge=1, lt=100),
@@ -140,7 +140,7 @@ async def read_item(
         print("ads_id: " + ads_id)
     return item
 
-@app.get("/models/{model_name}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get("/tutorial/models/{model_name}", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def get_model(model_name: ModelName):
     if model_name is ModelName.alexnet:
         return {"model_name": model_name, "message": "Deep learning FTW!"}
@@ -149,13 +149,13 @@ async def get_model(model_name: ModelName):
 
     return {"model_name": model_name, "message": "Have some residuals"}
 
-@app.get("/files/{file_path:path}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get("/tutorial/files/{file_path:path}", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def read_file(file_path: str):
     if file_path is "":
         return {"message": "empty file path"}
     return {"file_path": file_path}
 
-@app.get("/items/", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get("/tutorial/items/", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def read_items(
     i: list[int] = Query(default=[]), # this is query arg, but since it's a list it has to be declared explicitly with Query bc otherwise it would be treated as request body arg
     q: str | None = Query(
@@ -177,7 +177,7 @@ async def read_items(
     return results
 
 # request with body
-@app.post("/items/", response_model_exclude_unset=True, status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.post("/tutorial/items/", response_model_exclude_unset=True, status_code=status.HTTP_418_IM_A_TEAPOT)
 async def create_item(item: Item) -> Item:
     item_dict = item.dict()
     if item.tax:
@@ -190,7 +190,7 @@ async def create_item(item: Item) -> Item:
 # if not in path and singular type (int, float...) -> query arg
 # if there's a model for that type -> request body
 '''
-@app.put("/items/{item_id}")
+@app.put("/tutorial/items/{item_id}")
 async def create_item(item_id: int, item: Item, q: str | None = None):
     result =  {"item_id": item_id, **item.dict()}
     if q:
@@ -198,7 +198,7 @@ async def create_item(item_id: int, item: Item, q: str | None = None):
     return result
 '''
 
-@app.put("/items/{item_id}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.put("/tutorial/items/{item_id}", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def update_item(
     *,
     item_id: int = Path(title="The ID of the item to get", ge=0, le=1000),
@@ -216,7 +216,7 @@ async def update_item(
         results.update({"user": user})
     return results
 
-@app.put("/item", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.put("/tutorial/item", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def put_item(
     *,
     item: Item = Body(embed=True), # request will have key "key": val instead of just val
@@ -226,7 +226,7 @@ async def put_item(
 
 # dict with unknown keys / keys of specific type
 # (json only supports str as keys but pydantic does the conversion)
-@app.post("/index-weights/", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.post("/tutorial/index-weights/", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def create_index_weights(
     weights: dict[int, float] = Body(
         description="int: float",
@@ -264,16 +264,16 @@ def fake_save_user(user_in: UserIn) -> UserDB:
     print("User (fake) saved!")
     return user_db
 
-@app.post("/user/", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.post("/tutorial/user/", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def create_user(user: UserIn) -> UserOut:
     user_saved = fake_save_user(user)
     return UserOut(**user_saved.dict())
 
-@app.post("/login/")
+@app.post("/tutorial/login/")
 async def login(username: str = Form(), password: str = Form()): # can't have both body and form because encoding (idk why exactly but different encoding is used for forms)
     return {"username": username}
 
-@app.post("/files/", status_code=status.HTTP_201_CREATED)
+@app.post("/tutorial/files/", status_code=status.HTTP_201_CREATED)
 async def create_file(
     file: bytes = File(), # the file gets stored in mem
     fileb: UploadFile = File(),
@@ -285,16 +285,16 @@ async def create_file(
         "fileb_content_type": fileb.content_type,
     }
 
-@app.post("/uploadfile/", status_code=status.HTTP_201_CREATED)
+@app.post("/tutorial/uploadfile/", status_code=status.HTTP_201_CREATED)
 async def create_upload_file(file: UploadFile = File(description="You need to use File() if you want to add desc, but the type can still be UploadFile so you get all the benefits")): # stored in mem only up to max size, rest on disc and you can get metadata from it
     contents = await file.read()
     return {"filename": file.filename, "contents": contents}
 
-@app.post("/uploadfiles/")
+@app.post("/tutorial/uploadfiles/")
 async def create_upload_files(files: list[UploadFile]):
     return {"filenames": [file.filename for file in files]}
 
-@app.get("/uploadfiles/form/")
+@app.get("/tutorial/uploadfiles/form/")
 async def upload_files_form():
     content = """
 <body>
