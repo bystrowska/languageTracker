@@ -8,13 +8,23 @@ from fastapi import (
     File,
     Form,
     Header,
+    HTTPException,
     Path,
     Query,
-    status,
+    Request,
     UploadFile,
+    status,
 )
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, Field, HttpUrl, EmailStr
+from fastapi.encoders import jsonable_encoder
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
+
+
+class UnicornException(Exception):
+    def __init__(self, name: str):
+        self.name = name
 
 
 class ModelName(str, Enum):
@@ -63,12 +73,10 @@ class Item(BaseModel):
 
 
 class CarItem(Item):
-    name = "Car"
     price: float = 9.99  # idk why but you need type annotation for it to work
 
 
 class PlaneItem(Item):
-    name = "Plane"
     price: float = 10_000_000
 
 
@@ -111,10 +119,24 @@ app = FastAPI()
 
 # items_db = [{"item_name": "Foo"}, {"item_name": "Bar"}, {"item_name": "Baz"}]
 items_db = [
-    Item(name="Foo", price=12.99),
-    Item(name="Bar", price=3.49),
-    Item(name="Baz", price=3.33),
+    CarItem(name="Ford Fiesta", price=12.99),
+    CarItem(name="Tico", price=3.49),
+    PlaneItem(name="Boeing", price=3.33),
 ]
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print(f"Error!: {repr(exc)}\nwith body: {repr(exc.body)}")
+    return await request_validation_exception_handler(request, exc)
+
+
+@app.exception_handler(UnicornException)
+async def unicorn_exception_handler(request: Request, exc: UnicornException):
+    return JSONResponse(
+        status_code=status.HTTP_418_IM_A_TEAPOT,
+        content={"message": f"Oops! {exc.name} did something. There goes a rainbow..."},
+    )
 
 
 @app.get("/", status_code=status.HTTP_418_IM_A_TEAPOT)
@@ -157,7 +179,6 @@ async def read_user_item(
 @app.get(
     "/tutorial/item/{item_id}",
     response_model_exclude_none=True,
-    status_code=status.HTTP_418_IM_A_TEAPOT,
 )
 async def read_item(
     *,  # now all others args have to be called as keyword args
@@ -168,13 +189,15 @@ async def read_item(
         default=None
     ),  # needs to be explicitly declared as cookie, otherwise defaults to path param
 ) -> CarItem | PlaneItem:
-    if item_id % 2:
-        item = CarItem(description=q)
-    else:
-        item = PlaneItem(description=q)
+    if item_id >= len(items_db):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
+        )
     if ads_id:
         print("ads_id: " + ads_id)
-    return item
+    if q:
+        print(q)
+    return items_db[item_id]
 
 
 @app.get("/tutorial/models/{model_name}", status_code=status.HTTP_418_IM_A_TEAPOT)
@@ -189,7 +212,7 @@ async def get_model(model_name: ModelName):
 
 @app.get("/tutorial/files/{file_path:path}", status_code=status.HTTP_418_IM_A_TEAPOT)
 async def read_file(file_path: str):
-    if file_path is "":
+    if file_path == "":
         return {"message": "empty file path"}
     return {"file_path": file_path}
 
@@ -246,7 +269,7 @@ async def create_item(item_id: int, item: Item, q: str | None = None):
 """
 
 
-@app.put("/tutorial/items/{item_id}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.put("/tutorial/items/{item_id}")
 async def update_item(
     *,
     item_id: int = Path(title="The ID of the item to get", ge=0, le=1000),
@@ -371,3 +394,9 @@ async def upload_files_form():
 </body>
     """
     return HTMLResponse(content=content)
+
+
+@app.get("/tutorial/unicorns/{name}")
+async def read_unicorn(name: str):
+    raise UnicornException(name=name)
+    return {"unicorn_name": name}
