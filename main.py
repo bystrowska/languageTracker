@@ -152,7 +152,12 @@ async def root(
     return msg
 
 
-@app.get("/tutorial/projects/{project_id}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get(
+    "/tutorial/projects/{project_id}",
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    tags=["projects"],
+    deprecated=True,
+)
 async def get_project(project_id: int, q: str | None = None, short: bool = False):
     project = {"item_id": project_id}
     if q:
@@ -163,11 +168,18 @@ async def get_project(project_id: int, q: str | None = None, short: bool = False
 
 
 @app.get(
-    "/tutorial/users/{user_id}/items/{item_id}", status_code=status.HTTP_418_IM_A_TEAPOT
+    "/tutorial/users/{user_id}/items/{item_id}",
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    tags=["items", "users"],
+    summary="Read item for a user",
+    response_description="Dictionary with item attributes",
 )
 async def read_user_item(
     user_id: int, item_id: str, q: str | None = None, short: bool = False
 ):
+    """
+    Returns a dictionary with the supplied item_id and user_id. If there's a query returns that too. If short is set to True it will not include description (default is False)
+    """
     item = {"item_id": item_id, "owner_id": user_id}
     if q:
         item.update({"q": q})
@@ -179,6 +191,7 @@ async def read_user_item(
 @app.get(
     "/tutorial/item/{item_id}",
     response_model_exclude_none=True,
+    tags=["items"],
 )
 async def read_item(
     *,  # now all others args have to be called as keyword args
@@ -200,7 +213,11 @@ async def read_item(
     return items_db[item_id]
 
 
-@app.get("/tutorial/models/{model_name}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get(
+    "/tutorial/models/{model_name}",
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    tags=["models"],
+)
 async def get_model(model_name: ModelName):
     if model_name is ModelName.alexnet:
         return {"model_name": model_name, "message": "Deep learning FTW!"}
@@ -210,14 +227,18 @@ async def get_model(model_name: ModelName):
     return {"model_name": model_name, "message": "Have some residuals"}
 
 
-@app.get("/tutorial/files/{file_path:path}", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get(
+    "/tutorial/files/{file_path:path}",
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    tags=["files"],
+)
 async def read_file(file_path: str):
     if file_path == "":
         return {"message": "empty file path"}
     return {"file_path": file_path}
 
 
-@app.get("/tutorial/items/", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.get("/tutorial/items/", status_code=status.HTTP_418_IM_A_TEAPOT, tags=["items"])
 async def read_items(
     i: list[int] = Query(
         default=[]
@@ -246,6 +267,7 @@ async def read_items(
     "/tutorial/items/",
     response_model_exclude_unset=True,
     status_code=status.HTTP_418_IM_A_TEAPOT,
+    tags=["items"],
 )
 async def create_item(item: Item) -> Item:
     item_dict = item.dict()
@@ -269,7 +291,7 @@ async def create_item(item_id: int, item: Item, q: str | None = None):
 """
 
 
-@app.put("/tutorial/items/{item_id}")
+@app.put("/tutorial/items/{item_id}", tags=["items"])
 async def update_item(
     *,
     item_id: int = Path(title="The ID of the item to get", ge=0, le=1000),
@@ -288,7 +310,7 @@ async def update_item(
     return results
 
 
-@app.put("/tutorial/item", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.put("/tutorial/item", status_code=status.HTTP_418_IM_A_TEAPOT, tags=["items"])
 async def put_item(
     *,
     item: Item = Body(
@@ -301,7 +323,11 @@ async def put_item(
 
 # dict with unknown keys / keys of specific type
 # (json only supports str as keys but pydantic does the conversion)
-@app.post("/tutorial/index-weights/", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.post(
+    "/tutorial/index-weights/",
+    status_code=status.HTTP_418_IM_A_TEAPOT,
+    tags=["weights"],
+)
 async def create_index_weights(
     weights: dict[int, float] = Body(
         description="int: float",
@@ -342,20 +368,20 @@ def fake_save_user(user_in: UserIn) -> UserDB:
     return user_db
 
 
-@app.post("/tutorial/user/", status_code=status.HTTP_418_IM_A_TEAPOT)
+@app.post("/tutorial/user/", status_code=status.HTTP_418_IM_A_TEAPOT, tags=["users"])
 async def create_user(user: UserIn) -> UserOut:
     user_saved = fake_save_user(user)
     return UserOut(**user_saved.dict())
 
 
-@app.post("/tutorial/login/")
+@app.post("/tutorial/login/", tags=["auth"])
 async def login(
     username: str = Form(), password: str = Form()
 ):  # can't have both body and form because encoding (idk why exactly but different encoding is used for forms)
     return {"username": username}
 
 
-@app.post("/tutorial/files/", status_code=status.HTTP_201_CREATED)
+@app.post("/tutorial/files/", status_code=status.HTTP_201_CREATED, tags=["files"])
 async def create_file(
     file: bytes = File(),  # the file gets stored in mem
     fileb: UploadFile = File(),
@@ -368,7 +394,7 @@ async def create_file(
     }
 
 
-@app.post("/tutorial/uploadfile/", status_code=status.HTTP_201_CREATED)
+@app.post("/tutorial/uploadfile/", status_code=status.HTTP_201_CREATED, tags=["files"])
 async def create_upload_file(
     file: UploadFile = File(
         description="You need to use File() if you want to add desc, but the type can still be UploadFile so you get all the benefits"
@@ -378,12 +404,12 @@ async def create_upload_file(
     return {"filename": file.filename, "contents": contents}
 
 
-@app.post("/tutorial/uploadfiles/")
+@app.post("/tutorial/uploadfiles/", tags=["files"])
 async def create_upload_files(files: list[UploadFile]):
     return {"filenames": [file.filename for file in files]}
 
 
-@app.get("/tutorial/uploadfiles/form/")
+@app.get("/tutorial/uploadfiles/form/", tags=["files"])
 async def upload_files_form():
     content = """
 <body>
@@ -396,7 +422,7 @@ async def upload_files_form():
     return HTMLResponse(content=content)
 
 
-@app.get("/tutorial/unicorns/{name}")
+@app.get("/tutorial/unicorns/{name}", tags=["unicorns"])
 async def read_unicorn(name: str):
     raise UnicornException(name=name)
     return {"unicorn_name": name}
