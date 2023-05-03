@@ -24,7 +24,7 @@ Returns a list of all projects
 async def get_projects() -> list[Project]:
     return [
         Project(**Project.schema()["example"]),
-        Project(**Project.schema()["example2"]),
+        Project(**Project.schema()["example_no_id"], id=123),
     ]
 
 
@@ -42,6 +42,4 @@ Properties:
 
 @app.get("/project/{project_id}")
 async def get_properties(project_id: int) -> Project:
-    proj = Project(**Project.schema()["example"])
-    proj.id = project_id
-    return proj
+    return Project(**Project.schema()["example_no_id"], id=project_id)
