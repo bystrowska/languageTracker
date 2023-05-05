@@ -48,6 +48,31 @@ async def get_properties(project_id: int) -> Project:
 
 
 """
+Get children
+Get sub-projects for project_id
+"""
+
+
+@app.get("/children/{project_id}")
+async def get_children(project_id: int) -> list[Project]:
+    return [
+        Project(**Project.schema()["example"]),
+        Project(**Project.schema()["example_no_id"], id=123),
+    ]
+
+
+"""
+Get parent
+Get parent project for project id or None if top lvl
+"""
+
+
+async def get_parent(project_id: int) -> Project | None:
+    pass
+    pass
+
+
+"""
 Create new project
 """
 

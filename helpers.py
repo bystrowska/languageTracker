@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class Project(BaseModel):
     id: int | None = Field(description="Unique id of the project", default=None)
     name: str = Field(description="Name of the project, must be unique")
+    parent_id: int | None = Field(description="Id of parent project", default=None)
     created: datetime = Field(
         description="Date and time this project was created", default=datetime.now()
     )
