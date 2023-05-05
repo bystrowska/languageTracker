@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import FastAPI
 
 from helpers import Project
@@ -43,3 +45,28 @@ Properties:
 @app.get("/project/{project_id}")
 async def get_properties(project_id: int) -> Project:
     return Project(**Project.schema()["example_no_id"], id=project_id)
+
+
+"""
+Create new project
+"""
+
+
+@app.post("/project")
+async def create_project(project: Project) -> Project:
+    project.id = 111
+    project.created = datetime.now()
+    project.last_worked = None
+    project.total_time = 0
+    return project
+
+
+"""
+Update existing project
+"""
+
+
+@app.put("/project/{project_id}")
+async def update_project(project_id: int, project: Project) -> Project:
+    project.id = project_id
+    return project
